@@ -7,4 +7,9 @@ public class SceneChanges : MonoBehaviour
     {
         SceneManager.LoadScene(number);
     }
+
+    public void RestartScenes()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }
 }
