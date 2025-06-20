@@ -10,39 +10,66 @@ public class Test : MonoBehaviour
     [SerializeField] private Button[] _answerButtons; // Кнопки для ответов
     [SerializeField] private Question[] _questions; // Массив вопросов
     [SerializeField] private GameObject _resultPanel; // Панель для отображения результата
-    [SerializeField] private Text _resultText; // Текст для отображения результата
-    [SerializeField] private GameObject _scoreObj;
-    [SerializeField] private GameObject _scoreObj2;
-    [SerializeField] private GameObject _questionsButton;
-    [SerializeField] private Text _endTest;
-    [SerializeField] private int score = 0; // Счет игрока
+    [SerializeField] public int score = 0; // Счет игрока
+    [SerializeField] private Image _spriteImage; // Изображение для отображения спрайта
+    [SerializeField] public GameObject _adsPanel;
+    [SerializeField] public GameObject _questionsPanel;
+    [SerializeField] public Animator _trueFalse;
 
-    
     private AudioSliderManager _audioSliderManager;
     private List<int> askedQuestions = new List<int>(); // Список уже заданных вопросов
 
     void Start()
     {
         _resultPanel.SetActive(false); // Скрыть панель с результатом в начале
-        LoadNextQuestion();
         _audioSliderManager = FindAnyObjectByType<AudioSliderManager>();
+        LoadNextQuestion();
+        UpdateScoreText();
     }
 
-    void Update()
+    void UpdateScoreText()
     {
         _scoreText.text = $"Счёт: {score}";
     }
 
     public void Answer(int index)
     {
-        if (index == _questions[askedQuestions[askedQuestions.Count - 1]].correctAnswerIndex)
+        if (askedQuestions.Count == 0)
+        {
+            Debug.LogWarning("No questions have been asked yet.");
+            return;
+        }
+
+        int lastQuestionIndex = askedQuestions[askedQuestions.Count - 1];
+
+        if (index == _questions[lastQuestionIndex].correctAnswerIndex)
         {
             score++;
             _audioSliderManager._audioTrueQuestions.Play();
+            _trueFalse.SetTrigger("green");
         }
         else
         {
             _audioSliderManager._audioFalseQuestions.Play();
+            _adsPanel.SetActive(true);
+            _questionsPanel.SetActive(false);
+            _trueFalse.SetTrigger("red");
+        }
+
+        UpdateScoreText();
+        LoadNextQuestion();
+    }
+
+    public void AdsButton(int index)
+    {
+        if (index == _questions[askedQuestions[askedQuestions.Count - 1]].correctAnswerIndex)
+        {
+            
+            _audioSliderManager._audioTrueQuestions.Play();
+        }
+        else 
+        {
+            score++;
         }
 
         LoadNextQuestion();
@@ -53,6 +80,7 @@ public class Test : MonoBehaviour
         if (askedQuestions.Count >= _questions.Length)
         {
             ShowResult(); // Показать результат, если все вопросы заданы
+            _questionsPanel.SetActive(false);
             return;
         }
 
@@ -64,6 +92,15 @@ public class Test : MonoBehaviour
 
         askedQuestions.Add(currentQuestionIndex);
         DisplayQuestion(currentQuestionIndex);
+        ChangeSprite(currentQuestionIndex);
+    }
+
+    private void ChangeSprite(int questionIndex)
+    {
+        if (questionIndex < _questions.Length)
+        {
+            _spriteImage.sprite = _questions[questionIndex].questionSprite; // Изменяем спрайт на соответствующий вопрос
+        }
     }
 
     private void DisplayQuestion(int questionIndex)
@@ -75,49 +112,30 @@ public class Test : MonoBehaviour
             if (i < _questions[questionIndex].answers.Length)
             {
                 _answerButtons[i].GetComponentInChildren<Text>().text = _questions[questionIndex].answers[i];
-                _answerButtons[i].gameObject.SetActive(true);
-                int index = i; // Локальная переменная для замыкания
+                int buttonIndex = i; // Локальная переменная для замыкания
                 _answerButtons[i].onClick.RemoveAllListeners(); // Удаляем предыдущие слушатели
-                _answerButtons[i].onClick.AddListener(() => Answer(index)); // Добавляем новый слушатель
+                _answerButtons[i].onClick.AddListener(() => Answer(buttonIndex));
+                _answerButtons[i].gameObject.SetActive(true); // Показываем кнопку
             }
             else
             {
-                _answerButtons[i].gameObject.SetActive(false); // Скрыть лишние кнопки
+                _answerButtons[i].gameObject.SetActive(false); // Скрываем лишние кнопки
             }
         }
     }
 
     private void ShowResult()
     {
-        _questionText.gameObject.SetActive(false); 
-        foreach (var button in _answerButtons)
-        {
-            button.gameObject.SetActive(false); 
-        }
-
         _resultPanel.SetActive(true);
-        _scoreObj.SetActive(true);
-        _scoreObj2.SetActive(false);
-        _questionsButton.SetActive(false);
+       
+    }
 
-        if(score >= 0 && score < 10)
-            _resultText.text =  $"Ты только начинаешь свой путь в этом удивительном кубическом мире! Каждый шаг - это возможность узнать что-то новое. Продолжай исследовать, и твои знания будут расти!".ToString();
-        else if(score >= 10 && score < 20)
-            _resultText.text = $"Ты на правильном пути! Твои знания о Майнкрафте начинают укрепляться. Продолжай учиться, и вскоре ты сможешь справляться с любыми вызовами!".ToString();
-        else if(score >= 20 && score < 30)
-            _resultText.text =  $"Отличные результаты! Ты уже знаешь много о Майнкрафте и уверенно движешься вперед. Продолжай в том же духе, и ты станешь настоящим мастером!".ToString();
-        else if(score >= 30 && score < 50)
-            _resultText.text = $"Ты на высоте! Твои навыки и знания о Майнкрафт впечатляют. Ты готов к новым приключениям и вызовам, которые ждут впереди!".ToString();
-        else if(score >= 50 && score < 70)
-            _resultText.text = $"Просто потрясающе! Ты обладаешь глубокими знаниями и навыками, которые помогут тебе справляться с любыми трудностями. Впереди только самые захватывающие приключения!".ToString();
-        else if(score >= 70 && score < 90)
-            _resultText.text = $"Ты настоящий эксперт! Твои знания о Майнкрафт безграничны, и ты уверенно преодолеваешь все преграды. Ты вдохновляешь других своим мастерством!".ToString();
-        else if(score >= 90)
-            _resultText.text = $"Ты достиг вершины мастерства! Ты — настоящий герой этого кубического мира. Твои знания и навыки вдохновляют, и впереди у тебя только самые захватывающие приключения!".ToString();
-
-
-        _endTest.text = $"Вы ответили верно на {score} из {_questions.Length} вопросов".ToString();
-        
-
+    [System.Serializable]
+    public class Question
+    {
+        public string questionText; // Текст вопроса
+        public string[] answers; // Массив ответов
+        public int correctAnswerIndex; // Индекс правильного ответа
+        public Sprite questionSprite; // Спрайт для вопроса
     }
 }
